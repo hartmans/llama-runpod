@@ -57,7 +57,7 @@ headers = {"Authorization": "API_KEY"}
 payload = {"input": {"prompt": "Me: Hello, what is your purpose?\nAI:"}}
 
 # sync (blocking)
-r = requests.post(url + "/runsync", json=payload, headers=headers)
+r = requests.post(url + "/runsynyc", json=payload, headers=headers)
 r.json()
 
 # async (non-blocking)

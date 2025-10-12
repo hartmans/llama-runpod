@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import asyncio
+from pathlib import Path
 import os
+import re
 import sys
 import uvicorn
 from fastapi import FastAPI
@@ -31,9 +33,11 @@ def llama_done(*args):
     
 async def initialize():
     global initialized
+    await s3_download()
     try:
         sh.llama_server('--jinja',
                         '--no-webui',
+                        '-np', '4',
                         '--port', os.environ['PORT'],
                         '--host', '0.0.0.0',
                         _done=llama_done,
@@ -59,6 +63,23 @@ async def initialize():
         asyncio.get_event_loop().call_soon(llama_done)
         raise
 
+async def s3_download():
+    if not 'S3_MODEL_URL' in os.environ:
+        return
+    model = os.environ['LLAMA_ARG_MODEL']
+    model_path = Path(model)
+    if  model_path.exists(): return
+    client = boto3.client('s3')
+    if not (match := re.match(
+            r's3://([^/]+)/(.*)$', os.environ['S3_MODEL_URL'])):
+        raise RunnTimeError('Unable to parse s3 url')
+    s3_bucket = match.group(1)
+    s3_key = match.group(2)
+    s3_transfer = s3transfer.S3Transfer(client)
+    print('Downloading model from s3')
+    await asyncio.to_thread(s3_transfer.download_file, s3_bucket, s3_key, os.environ['LLAMA_ARG_MODEL'])
+    
+    
 async def main():
     global main_loop
     main_loop = asyncio.get_event_loop()
