@@ -57,7 +57,9 @@ async def initialize():
                 await asyncio.sleep(timeout)
                 timeout = timeout*2
                 if timeout > 32: timeout = 32
-                    
+        else:
+            raise RuntimeError('Failed to connect to llama server after retries')
+
         initialized = True
     except Exception as e:
         asyncio.get_event_loop().call_soon(llama_done)
@@ -78,12 +80,20 @@ async def s3_download():
     s3_transfer = s3transfer.S3Transfer(client)
     print('Downloading model from s3')
     await asyncio.to_thread(s3_transfer.download_file, s3_bucket, s3_key, os.environ['LLAMA_ARG_MODEL'])
+    print("Model downloaded")
     
     
+    
+def initialize_status(future):
+    if future.exception():
+        global shutdown
+        shutdown = True
+        print("Initialization error: "+str(future.exception()))
+
 async def main():
     global main_loop
     main_loop = asyncio.get_event_loop()
-    main_loop.create_task(initialize())
+    main_loop.create_task(initialize()).add_done_callback(initialize_status)
     config = uvicorn.Config(app,
                              port=int(os.environ['PORT_HEALTH']),
                              host='0.0.0.0',
