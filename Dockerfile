@@ -23,7 +23,7 @@ COPY manager.py /manager.py
 
 ENV LLAMA_ARG_MODEL=/workspace/model.gguf
 ENV LLAMA_ARG_CTX_SIZE=32767
-
+ENV LLAMA_ARG_CHAT_TEMPLATE_KWARGS='{"enable_thinking":false}'
 CMD ["/manager.py"]
 
 
